@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "wUfyRcPB31Q=",
+  "dgSpecHash": "uuSa3w34jos=",
   "success": true,
-  "projectFilePath": "D:\\Programming\\Client\\Client\\Client.csproj",
+  "projectFilePath": "D:\\Programming\\Server_Client_Socket\\Client\\Client\\Client.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Programming\\Client\\Client\\Client.csproj": {}
+    "D:\\Programming\\Server_Client_Socket\\Client\\Client\\Client.csproj": {}
   },
   "projects": {
-    "D:\\Programming\\Client\\Client\\Client.csproj": {
+    "D:\\Programming\\Server_Client_Socket\\Client\\Client\\Client.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Programming\\Client\\Client\\Client.csproj",
+        "projectUniqueName": "D:\\Programming\\Server_Client_Socket\\Client\\Client\\Client.csproj",
         "projectName": "Client",
-        "projectPath": "D:\\Programming\\Client\\Client\\Client.csproj",
+        "projectPath": "D:\\Programming\\Server_Client_Socket\\Client\\Client\\Client.csproj",
         "packagesPath": "C:\\Users\\user\\.nuget\\packages\\",
-        "outputPath": "D:\\Programming\\Client\\Client\\obj\\",
+        "outputPath": "D:\\Programming\\Server_Client_Socket\\Client\\Client\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "D:\\Programming\\VisualSDK\\NuGetPackages"

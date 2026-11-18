@@ -2,25 +2,48 @@
 using System.Net.Sockets;
 using System.Text;
 
-class Client
+class Program
 {
     static void Main()
     {
-        const string host = "127.0.0.1";
-        const int port = 50007;
+        using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        socket.Connect("127.0.0.1", 50007);
 
-        using var client = new TcpClient();
-        client.Connect(host, port);
-        Console.WriteLine("Подключено к серверу.");
+        string message = "hello World";
+        Console.WriteLine($"[CLIENT] Отправляем строку: \"{message}\"");
 
-        using NetworkStream stream = client.GetStream();
+        byte[] body = Encoding.UTF8.GetBytes(message);
+        byte[] packet = new byte[4 + body.Length];
+        packet[0] = (byte)(body.Length >> 24);
+        packet[1] = (byte)(body.Length >> 16);
+        packet[2] = (byte)(body.Length >> 8);
+        packet[3] = (byte)body.Length;
+        Array.Copy(body, 0, packet, 4, body.Length);
 
-        string message = "Привет, сервер!";
-        byte[] data = Encoding.UTF8.GetBytes(message);
-        stream.Write(data, 0, data.Length);
+        Console.WriteLine($"[CLIENT] Байты ОТПРАВЛЕННЫЕ (включая 4 байта длины): {BitConverter.ToString(packet)}");
+        socket.Send(packet);
 
-        byte[] buffer = new byte[1024];
-        int bytesRead = stream.Read(buffer, 0, buffer.Length);
-        Console.WriteLine($"Ответ сервера: {Encoding.UTF8.GetString(buffer, 0, bytesRead)}");
+        byte[] lenBuf = new byte[4];
+        ReadExact(socket, lenBuf, 4);
+        int respLen = (lenBuf[0] << 24) | (lenBuf[1] << 16) | (lenBuf[2] << 8) | lenBuf[3];
+
+        byte[] respBody = new byte[respLen];
+        ReadExact(socket, respBody, respLen);
+
+        Console.WriteLine($"[CLIENT] Байты ПОЛУЧЕННЫЕ (только тело): {BitConverter.ToString(respBody)}");
+
+        string response = Encoding.UTF8.GetString(respBody);
+        Console.WriteLine($"[CLIENT] Декодированная строка: \"{response}\"");
+    }
+
+    static void ReadExact(Socket socket, byte[] buffer, int count)
+    {
+        int offset = 0;
+        while (offset < count)
+        {
+            int read = socket.Receive(buffer, offset, count - offset, SocketFlags.None);
+            if (read == 0) throw new Exception("Сервер закрыл соединение.");
+            offset += read;
+        }
     }
 }

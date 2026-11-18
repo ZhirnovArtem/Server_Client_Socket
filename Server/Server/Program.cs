@@ -3,33 +3,84 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-class Server
+class EchoServer
 {
+    private const int Port = 50007;
+
     static void Main()
     {
-        const int port = 50007;
-        var listener = new TcpListener(IPAddress.Loopback, port);
+        var listener = new TcpListener(IPAddress.Loopback, Port);
         listener.Start();
-        Console.WriteLine($"Сервер слушает 127.0.0.1:{port}...");
+        Console.WriteLine($"[SERVER] Слушаю 127.0.0.1:{Port} (синхронно, 1 клиент за раз)");
 
-        using TcpClient client = listener.AcceptTcpClient();
-        Console.WriteLine($"Подключен клиент: {client.Client.RemoteEndPoint}");
+        try
+        {
+            while (true)
+            {
+                using TcpClient client = listener.AcceptTcpClient();
+                Console.WriteLine($"[SERVER] Подключен: {client.Client.RemoteEndPoint}");
 
+                try
+                {
+                    HandleClient(client);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[SERVER] Ошибка клиента: {ex.Message}");
+                }
+                finally
+                {
+                    Console.WriteLine("[SERVER] Клиент отключен. Жду следующего...");
+                }
+            }
+        }
+        finally
+        {
+            listener.Stop();
+            Console.WriteLine("[SERVER] Остановлен.");
+        }
+    }
+
+    private static void HandleClient(TcpClient client)
+    {
         using NetworkStream stream = client.GetStream();
-        byte[] buffer = new byte[1024];
 
         while (true)
         {
-            int bytesRead = stream.Read(buffer, 0, buffer.Length);
-            if (bytesRead == 0) break; // клиент закрыл соединение
+            byte[] lenBuf = new byte[4];
+            if (!ReadExact(stream, lenBuf, 4)) return; 
+            int length = (lenBuf[0] << 24) | (lenBuf[1] << 16) | (lenBuf[2] << 8) | lenBuf[3];
+            if (length <= 0 || length > 1_000_000)
+                throw new InvalidOperationException($"Некорректная длина: {length}");
 
-            string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-            Console.WriteLine($"Получено: {message}");
+            byte[] body = new byte[length];
+            if (!ReadExact(stream, body, length)) return;
 
-            byte[] response = Encoding.UTF8.GetBytes("Echo: " + message);
-            stream.Write(response, 0, response.Length);
+            string text = Encoding.UTF8.GetString(body);
+            string upper = text.ToUpperInvariant();
+            Console.WriteLine($"[SERVER] Получено: \"{text}\" → \"{upper}\"");
+
+            byte[] respBody = Encoding.UTF8.GetBytes(upper);
+            byte[] respLen = {
+                (byte)(respBody.Length >> 24),
+                (byte)(respBody.Length >> 16),
+                (byte)(respBody.Length >> 8),
+                (byte)(respBody.Length)
+            };
+            stream.Write(respLen, 0, 4);
+            stream.Write(respBody, 0, respBody.Length);
+            stream.Flush();
         }
-
-        listener.Stop();
+    }
+    private static bool ReadExact(NetworkStream stream, byte[] buffer, int count)
+    {
+        int offset = 0;
+        while (offset < count)
+        {
+            int read = stream.Read(buffer, offset, count - offset);
+            if (read == 0) return false; 
+            offset += read;
+        }
+        return true;
     }
 }
